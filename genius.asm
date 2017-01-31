@@ -13,12 +13,12 @@ vermelho DWORD 0Ch
 amarelo DWORD 0Eh
 branco DWORD 0Fh
 
-;Teclado
+; Teclado
 cimaDX WORD 0026h
 baixoDX WORD 0028h
 enterDX WORD 000Dh
 
-;Tela inicial
+; Tela inicial
 bloco BYTE 0DBh, 0DBh, 0DBh, 0DBh, 0
 logo BYTE "  ________              .__              ", 0Dh, 0Ah, 5 DUP (9),
 		  " /  _____/  ____   ____ |__|__ __  ______ ", 0Dh, 0Ah, 5 DUP (9),
@@ -29,17 +29,20 @@ logo BYTE "  ________              .__              ", 0Dh, 0Ah, 5 DUP (9),
 
 creditos BYTE "    Criado por:", 0Dh, 0Ah,
 			   "    Marcio Lima Inacio", 0Dh, 0Ah,
-			   "    Samara Assis", 0Dh, 0Ah,
+			   "    Samara Assis", 0Dh, 0Ah, 0
 
-;Tela de menu
+; Tela de menu
 menuTitulo BYTE "    MENU", 3 DUP (0Dh, 0Ah), 0
-menu1 BYTE "    1. Jogar", 2 DUP (0Dh, 0Ah), 0
-menu2 BYTE "    2. Instrucoes", 2 DUP (0Dh, 0Ah), 0
+jogarSelecionado BYTE "    > Jogar", 2 DUP (0Dh, 0Ah), 0
+instruSelecionado BYTE "    > Instrucoes", 2 DUP (0Dh, 0Ah), 0
+jogarMenu BYTE "      Jogar", 2 DUP (0Dh, 0Ah), 0
+instruMenu BYTE "      Instrucoes", 2 DUP (0Dh, 0Ah), 0
+
 
 .code
 
-;Imprime uma linha de blocos coloridos
-;Usa: ECX, EDX, EAX
+; Imprime uma linha de blocos coloridos
+; Usa: ECX, EDX, EAX
 LinhaBlocos PROC
 	push ecx
 	push edx
@@ -73,9 +76,10 @@ LinhaBlocosLoop:
 	ret
 LinhaBlocos ENDP
 
-;Imprime o logo do jogo
-;Usa: EDX
-Logo PROC
+
+; Imprime o logo do jogo
+; Usa: EDX
+PrintLogo PROC
 	push edx
 	
     mov edx, OFFSET centralizarHorizontal
@@ -86,9 +90,10 @@ Logo PROC
 	pop edx
 	
     ret
-Logo ENDP
+PrintLogo ENDP
 
-;Imprime a tela inicial do jogo
+
+; Imprime a tela inicial do jogo
 ; Usa: EDX, EAX
 TelaInicial PROC
 	push edx
@@ -103,7 +108,7 @@ TelaInicial PROC
 	mov edx, OFFSET centralizarVertical
 	call WriteString
 	
-	call Logo
+	call PrintLogo
 	
 	call WriteString
 	
@@ -120,12 +125,9 @@ TelaInicial PROC
 	ret
 TelaInicial ENDP
 
-;Imprime a tela de menu
-;Usa: EDX
-TelaMenu PROC
-	push eax
-	push edx
-	
+
+; Desenha primeira parte da tela de menu
+PrintBlocosMenu PROC
 	call Clrscr
 	
 	call LinhaBlocos
@@ -136,9 +138,33 @@ TelaMenu PROC
 	call Crlf
 	mov edx, OFFSET menuTitulo
 	call WriteString
-	mov edx, OFFSET menu1
+	
+	ret
+PrintBlocosMenu ENDP
+
+
+; Imprime a tela de menu
+; Usa: EAX, EBX, EDX
+TelaMenu PROC
+	push eax
+	push ebx
+	push edx
+	
+TelaMenuJogar:
+	call PrintBlocosMenu
+	mov edx, OFFSET jogarSelecionado
 	call WriteString
-	mov edx, OFFSET menu2
+	mov edx, OFFSET instruMenu
+	call WriteString
+	mov ebx, 0
+	jmp TelaMenuLeTecla
+	
+TelaMenuInstru:
+	call PrintBlocosMenu
+	mov edx, OFFSET jogarMenu
+	call WriteString
+	mov edx, OFFSET instruSelecionado
+	mov ebx, 1
 	call WriteString
 	
 TelaMenuLeTecla:
@@ -159,18 +185,18 @@ TelaMenuLeTecla:
 	jmp TelaMenuFim
 
 TelaMenuLeuCima:
-	mov eax, 10
-	call WriteInt
-	jmp TelaMenuLeTecla
+	jmp TelaMenuJogar
 
 TelaMenuLeuBaixo:
-	mov eax, 20
-	call WriteInt
-	jmp TelaMenuLeTecla
+	jmp TelaMenuInstru
 
 TelaMenuFim:
 	
+	mov eax, ebx
+	call WriteInt
+	
 	pop edx
+	pop ebx
 	pop eax
 	
 	ret
