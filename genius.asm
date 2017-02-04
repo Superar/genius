@@ -15,6 +15,7 @@ PrintSequencia
 PrintParteQuadrado
 PrintLinhaQuadradosPequenos
 PrintQuadradosPequenos
+TelaJogo
 main
 @
 
@@ -76,6 +77,7 @@ instrucoesSair BYTE "      Pressione Enter para voltar"
 
 ; Jogo
 quadradoGrande BYTE 20 DUP (0DBh), 0Dh, 0Ah, 0
+beep BYTE 7
 
 fila DWORD 100 DUP (?)
 filaTam BYTE 0
@@ -93,6 +95,7 @@ LinhaBlocos PROC
 
 		mov edx, OFFSET bloco
 
+; Desenha 7 blocos de quatro cores alternadas
 		mov ecx, 7
 LinhaBlocosLoop:
   	mov eax, azul
@@ -109,6 +112,7 @@ LinhaBlocosLoop:
     call WriteString
     loop LinhaBlocosLoop
 
+; Retorna a cor para branco
 	  mov eax, branco
 	  call SetTextColor
 
@@ -148,10 +152,12 @@ TelaInicial PROC
 
 		call Clrscr
 
+; Desenha os blocos no topo da tela
 		call LinhaBlocos
 		call Crlf
 		call LinhaBlocos
 
+; Centarliza e desenha o logo
 		mov edx, OFFSET centralizarVertical
 		call WriteString
 
@@ -159,6 +165,7 @@ TelaInicial PROC
 
 		call WriteString
 
+; Escreve os creditos
 		mov edx, OFFSET creditos
 		call WriteString
 
@@ -175,7 +182,7 @@ TelaInicial ENDP
 
 ; ------------------------------------------------------------
 PrintBlocosMenu PROC
-; Desenha primeira parte da tela de menu
+; Desenha o cabecalho da tela de menu
 ; Usa: edx
 ; ------------------------------------------------------------
 	push edx
@@ -209,6 +216,7 @@ TelaMenu PROC
 
 	call Clrscr
 
+; Opcao de Jogar esta selecionada com a seta
 TelaMenuJogar:
 		call PrintBlocosMenu
 		mov edx, OFFSET jogarSelecionado
@@ -218,6 +226,7 @@ TelaMenuJogar:
 		mov ecx, 0
 		jmp TelaMenuLeTecla
 
+; Opcao de Instrucoes esta selecionada com a seta
 TelaMenuInstru:
 		call PrintBlocosMenu
 		mov edx, OFFSET jogarMenu
@@ -226,6 +235,7 @@ TelaMenuInstru:
 		mov ecx, 1
 		call WriteString
 
+; Le uma tecla do usuario
 TelaMenuLeTecla:
 		mov eax, 50
 		call Delay
@@ -233,19 +243,24 @@ TelaMenuLeTecla:
 		call ReadKey
 		jz TelaMenuLeTecla
 
+; Tecla para cima: Selecionou jogar
 		cmp dx, cimaDX
 		je TelaMenuJogar
 
+; Tecla para baixo: Selecionou Instrucoes
 		cmp dx, baixoDX
 		je TelaMenuInstru
 
+; Enter: Selecionou opcao
 		cmp dx, enterDX
 		je TelaMenuEnter
 
+; ESC: Sai do jogo
 		cmp dx, escDX
 		jne TelaMenuLeTecla
 		jmp TelaMenuFim
 
+; Verifica a selecao salva em ECX
 TelaMenuEnter:
 		cmp ecx, 0
 		je TelaMenuChamarJogo
@@ -253,6 +268,7 @@ TelaMenuEnter:
 		call TelaInstrucoes
 		jmp TelaMenuJogar
 
+; Depois de sair do jogo, volta ao inicio do menu
 TelaMenuChamarJogo:
 		call TelaJogo
 		jmp TelaMenuJogar
@@ -277,6 +293,8 @@ TelaInstrucoes PROC
 
 		call Clrscr
 
+; Imprime cabecalho e instrucoes
+
 		call LinhaBlocos
 		call Crlf
 		call LinhaBlocos
@@ -293,6 +311,7 @@ TelaInstrucoes PROC
 		mov edx, OFFSET instrucoesSair
 		call WriteString
 
+; Le tecla. ESC e Enter saem e voltam para o menu
 TelaInstruLeTecla:
 		mov eax, 50
 		call Delay
@@ -327,15 +346,18 @@ PrintQuadradoGrande PROC
 	push ecx
 	push eax
 
+; Centraliza quadrado
 		mov edx, OFFSET centralizarVertical
 		call WriteString
 
+; Formado por 8 linhas de quadrado, salvo em uma string de bytes
 		mov ecx, 8
 
 LinhaQuadrado:
 		mov edx, OFFSET centralizarHorizontal
 		call WriteString
 
+; Recebe cor de parametro e colore o texto
 		mov eax, [ebp + 8]
 		shl eax, 4
 		or eax, [ebp + 8]
@@ -344,6 +366,7 @@ LinhaQuadrado:
 		mov edx, OFFSET quadradoGrande
 		call WriteString
 
+; Retorna texto para branco
 		mov eax, branco
 		call SetTextColor
 
@@ -366,9 +389,11 @@ GeraSequencia PROC
 	push eax
 	push ecx
 
+; Recebe ultima posicao da fila
 		movzx esi, filaTam
 		shl esi, 2
 
+; Gera numero aleatorio para escolher cor
 		mov eax, 4
 		call RandomRange
 		cmp eax, 1
@@ -378,6 +403,7 @@ GeraSequencia PROC
 		cmp eax, 3
 		je GeraAmarelo
 
+; Salva cor em EBX
 GeraAzul:
 		mov ebx, azul
 		jmp InsereElemento
@@ -389,6 +415,8 @@ GeraVermelho:
 		jmp InsereElemento
 GeraAmarelo:
 		mov ebx, amarelo
+
+	; Insere cor na fila e aumenta tamanho
 InsereElemento:
 		mov fila[esi], ebx
 		add filaTam, 1
@@ -412,11 +440,14 @@ PrintSequencia PROC
 		movzx ecx, filaTam
 		mov esi, 0
 
+; Itera sobre todos os elementos na fila de acordo com o seu tamanho
 PrintSequenciaLoop:
+; Tempo entre uma cor e outra
 		call Clrscr
 		mov eax, 500
 		call Delay
 
+; Desenha elementos da fila
 		push fila[esi]
 		call PrintQuadradoGrande
 		pop eax
@@ -446,15 +477,18 @@ PrintParteQuadrado PROC
 	push edx
 	push eax
 
+; Muda a cor
 		mov eax, [ebp + 8]
 		shl eax, 4
 		or eax, [ebp + 8]
 		call SetTextColor
 
+	; Imprime dois blocos
 		mov edx, OFFSET bloco
 		call WriteString
 		call WriteString
 
+	; Retorna texto para o branco
 		mov eax, branco
 		call SetTextColor
 
@@ -521,6 +555,7 @@ PrintQuadradosPequenos PROC
 		mov edx, OFFSET centralizarVertical
 		call WriteString
 
+; Cada quadrado e formado de 3 linhas de 2 blocos
 		mov ecx, 3
 QuadradosPequenosLoop:
 		mov edx, OFFSET espacamentoQuadrados
@@ -548,12 +583,14 @@ TelaJogo PROC
 	push ebx
 		call Randomize
 
+; Desenha a sequencia e os quadrados pequenos para selecao
 JogoInicio:
 		call Clrscr
 		call GeraSequencia
 		call PrintSequencia
 		call PrintQuadradosPequenos
 
+; Contador de quantos elementos foram lidos do usuario
 		mov ecx, 0
 
 TelaJogoLeTecla:
@@ -577,6 +614,7 @@ TelaJogoLeTecla:
 		mov ebx, amarelo
 		jmp JogoVerificacao
 
+; Atribui cor lida ao registrador ebx
 JogoLeuAzul:
 		mov ebx, azul
 		jmp JogoVerificacao
@@ -586,7 +624,10 @@ JogoLeuVerde:
 JogoLeuVermelho:
 		mov ebx, vermelho
 
+; Compara a cor do elemento lido (em EBX) com a posicao atual na fila (ECX)
 JogoVerificacao:
+		mov al, beep
+		call WriteChar
 		shl ecx, 2
 		cmp fila[ecx], ebx
 		jne JogoFim
@@ -594,12 +635,16 @@ JogoVerificacao:
 
 		add ecx, 1
 
+; Verifica se a fila acabou
 		cmp cl, filaTam
+; Fila nao acabou, le proximo elemento
 		jne TelaJogoLeTecla
+; Fila acabou, reinicia sequencia com novo elemento
 		jmp JogoInicio
 
 JogoFim:
 
+; Reinicia fila
 		mov filaTam, 0
 		call Clrscr
 
@@ -613,17 +658,8 @@ TelaJogo ENDP
 
 
 main PROC
-	;call TelaInicial
+	call TelaInicial
 	call TelaMenu
-
-	;mov ecx, 3
-	;call Randomize
-	;GeraSequenciaLoop:
-	;call GeraSequencia
-	;loop GeraSequenciaLoop
-	;call PrintSequencia
-
-	;call PrintQuadradosPequenos
 
 	exit
 main ENDP
