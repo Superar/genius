@@ -82,6 +82,8 @@ beep BYTE 7
 fila DWORD 100 DUP (?)
 filaTam BYTE 0
 
+msgFimJogo BYTE "FIM DE JOGO", 0
+
 ; configuracao
 configTitulo BYTE "    Escolha a dificuldade", 3 DUP (0Dh, 0Ah), 0
 dificuldade1Selecionado BYTE "    > Facil", 2 DUP (0Dh, 0Ah), 0
@@ -601,6 +603,10 @@ JogoInicio:
 		call PrintSequencia
 		call PrintQuadradosPequenos
 
+; Se fila encheu, fim de jogo
+		cmp filaTam, 100
+		je JogoFim
+
 ; Contador de quantos elementos foram lidos do usuario
 		mov ecx, 0
 
@@ -657,9 +663,18 @@ JogoVerificacao:
 		jmp JogoInicio
 
 JogoFim:
-
-; Reinicia fila
+; Reinicia fila e imprime mensagem de fim de jogo
 		mov filaTam, 0
+		call Clrscr
+
+		mov edx, OFFSET centralizarVertical
+		call WriteString
+		mov edx, OFFSET centralizarHorizontal
+		call WriteString
+		mov edx, OFFSET msgFimJogo
+		call WriteString
+		mov eax, 750
+		call Delay
 		call Clrscr
 
 	pop ebx
@@ -712,6 +727,7 @@ PrintTelaConfiguracao PROC
 
 		mov eax, [ebp + 8]
 
+; Testa opcao atualmente selecionada para escrever na tela
 		cmp eax, 1
 		je PrintTelaConfig1
 		cmp eax, 2
@@ -754,7 +770,7 @@ PrintTelaConfiguracao ENDP
 
 ; ------------------------------------------------------------
 TelaConfiguracao PROC
-; Logica para a selecao da dificuldade
+; Le tecla para selecao de dificuldade e atualiza vetor de dificuldade
 ; Usa: EDX, ECX
 ; ------------------------------------------------------------
 	push edx
