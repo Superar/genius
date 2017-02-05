@@ -82,6 +82,16 @@ beep BYTE 7
 fila DWORD 100 DUP (?)
 filaTam BYTE 0
 
+; configuracao
+configTitulo BYTE "    Escolha a dificuldade", 3 DUP (0Dh, 0Ah), 0
+dificuldade1Selecionado BYTE "    > Facil", 2 DUP (0Dh, 0Ah), 0
+dificuldade2Selecionado BYTE "    > Normal", 2 DUP (0Dh, 0Ah), 0
+dificuldade3Selecionado BYTE "    > Dificil", 2 DUP (0Dh, 0Ah), 0
+dificuldade1 BYTE "      Facil", 2 DUP (0Dh, 0Ah), 0
+dificuldade2 BYTE "      Normal", 2 DUP (0Dh, 0Ah), 0
+dificuldade3 BYTE "      Dificil", 2 DUP (0Dh, 0Ah), 0
+dificuldade DWORD 300, 1000
+
 .code
 
 ; ------------------------------------------------------------
@@ -270,6 +280,7 @@ TelaMenuEnter:
 
 ; Depois de sair do jogo, volta ao inicio do menu
 TelaMenuChamarJogo:
+		call TelaConfiguracao
 		call TelaJogo
 		jmp TelaMenuJogar
 
@@ -444,7 +455,7 @@ PrintSequencia PROC
 PrintSequenciaLoop:
 ; Tempo entre uma cor e outra
 		call Clrscr
-		mov eax, 500
+		mov eax, dificuldade[0]
 		call Delay
 
 ; Desenha elementos da fila
@@ -452,7 +463,7 @@ PrintSequenciaLoop:
 		call PrintQuadradoGrande
 		pop eax
 
-		mov eax, 1500
+		mov eax, dificuldade[4]
 		call Delay
 
 		add esi, 4
@@ -609,6 +620,9 @@ TelaJogoLeTecla:
 		cmp dx, T3DX
 		je JogoLeuVermelho
 
+		cmp dx, escDX
+		je JogoFim
+
 		cmp dx, T4DX
 		jne TelaJogoLeTecla
 		mov ebx, amarelo
@@ -655,6 +669,156 @@ JogoFim:
 
 	ret
 TelaJogo ENDP
+
+
+; ------------------------------------------------------------
+PrintBlocosConfig PROC
+; Desenha o cabecalho da tela de configuracao
+; Usa: EDX
+; ------------------------------------------------------------
+	push edx
+
+		mov dx, 0
+		call Gotoxy
+
+		call LinhaBlocos
+		call Crlf
+		call LinhaBlocos
+
+		call Crlf
+		call Crlf
+		mov edx, OFFSET configTitulo
+		call WriteString
+
+	pop edx
+
+	ret
+PrintBlocosConfig ENDP
+
+
+; ------------------------------------------------------------
+PrintTelaConfiguracao PROC
+; Desenha a tela para selecao da dificuldade do jogo
+; Recebe: Dificuldade atual selecionada [EBP + 8]
+; Usa: EDX, EAX
+; ------------------------------------------------------------
+
+	push ebp
+	mov ebp, esp
+	push edx
+	push eax
+
+		call PrintBlocosConfig
+
+		mov eax, [ebp + 8]
+
+		cmp eax, 1
+		je PrintTelaConfig1
+		cmp eax, 2
+		je PrintTelaConfig2
+
+		mov edx, OFFSET dificuldade1
+		call WriteString
+		mov edx, OFFSET dificuldade2
+		call WriteString
+		mov edx, OFFSET dificuldade3Selecionado
+		call WriteString
+		jmp TelaConfigFim
+
+PrintTelaConfig1:
+		mov edx, OFFSET dificuldade1Selecionado
+		call WriteString
+		mov edx, OFFSET dificuldade2
+		call WriteString
+		mov edx, OFFSET dificuldade3
+		call WriteString
+		jmp TelaConfigFim
+
+PrintTelaConfig2:
+		mov edx, OFFSET dificuldade1
+		call WriteString
+		mov edx, OFFSET dificuldade2Selecionado
+		call WriteString
+		mov edx, OFFSET dificuldade3
+		call WriteString
+
+TelaConfigFim:
+
+	pop eax
+	pop edx
+	pop ebp
+
+	ret
+PrintTelaConfiguracao ENDP
+
+
+; ------------------------------------------------------------
+TelaConfiguracao PROC
+; Logica para a selecao da dificuldade
+; Usa: EDX, ECX
+; ------------------------------------------------------------
+	push edx
+	push ecx
+
+		call Clrscr
+
+		mov ecx, 1
+ConfigDesenhaTela:
+		push ecx
+		call PrintTelaConfiguracao
+		pop ecx
+
+ConfigLeTecla:
+		mov eax, 50
+		call Delay
+
+		call ReadKey
+		jz ConfigLeTecla
+
+		cmp dx, enterDX
+		je ConfigEnter
+		cmp dx, cimaDX
+		je ConfigLeuCima
+		cmp dx, baixoDX
+		jne ConfigLeTecla
+
+		cmp ecx, 3
+		je ConfigDesenhaTela
+		add ecx, 1
+		jmp ConfigDesenhaTela
+
+ConfigLeuCima:
+		cmp ecx, 1
+		je ConfigDesenhaTela
+		sub ecx, 1
+		jmp ConfigDesenhaTela
+
+ConfigEnter:
+		cmp ecx, 1
+		je ConfigFacil
+		cmp ecx, 2
+		je ConfigNormal
+
+		mov dificuldade[0], 150
+		mov dificuldade[4], 500
+		jmp ConfigFim
+
+ConfigFacil:
+		mov dificuldade[0], 500
+		mov dificuldade[4], 1500
+		jmp ConfigFim
+
+ConfigNormal:
+		mov dificuldade[0], 300
+		mov dificuldade[4], 1000
+
+ConfigFim:
+
+	pop ecx
+	pop edx
+
+	ret
+TelaConfiguracao ENDP
 
 
 main PROC
