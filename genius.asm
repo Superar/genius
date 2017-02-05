@@ -16,6 +16,9 @@ PrintParteQuadrado
 PrintLinhaQuadradosPequenos
 PrintQuadradosPequenos
 TelaJogo
+PrintBlocosConfig
+PrintTelaConfiguracao
+TelaConfiguracao
 main
 @
 
